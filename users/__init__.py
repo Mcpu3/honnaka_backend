@@ -1,7 +1,7 @@
 import azure.functions as func
 from fastapi import FastAPI
 
-from hello_world.api.v1 import api
+from users.api.v1 import api
 
 
 app = FastAPI()
