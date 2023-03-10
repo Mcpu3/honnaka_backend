@@ -29,7 +29,7 @@ def get_current_user(token: str = Depends(OAuth2PasswordBearer("/api/v1/signin")
 
 @api_router.post("/signup")
 def signup(request_body: schema.SignUp):
-    user_name = request_body.username
+    user_name = request_body.user_name
     password = request_body.password
     if (not user_name) or (not password):
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
