@@ -37,7 +37,8 @@ def signup(request_body: schema.SignUp):
         user_uuid = str(uuid4()),
         user_name = user_name,
         hashed_password = CryptContext(["bcrypt"]).hash(password),
-        created_at = datetime.now()
+        created_at = datetime.now(),
+        deleted = False
     )
     crud.create_user(user)
 
