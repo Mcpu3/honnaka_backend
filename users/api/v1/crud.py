@@ -4,12 +4,12 @@ from typing import Optional
 
 import pyodbc
 
-from users.api.v1.schema import User
+import users.api.v1.schema as schema
 
 
 connection = pyodbc.connect("Driver={ODBC Driver 18 for SQL Server};Server=tcp:honnaka-backend.database.windows.net,1433;Database=honnaka-backend;Uid=iwamoto.keisuke629@honnaka-backend;Pwd={%s};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;" % os.getenv("PASSWORD"))
 
-def create_user(user: User):
+def create_user(user: schema.User):
     user_uuid = user.user_uuid
     user_name = user.user_name
     hashed_password = user.hashed_password
@@ -33,7 +33,7 @@ def create_user(user: User):
         )
         """)
 
-def read_user(user_uuid: Optional[str] = None, user_name: Optional[str] = None) -> User:
+def read_user(user_uuid: Optional[str] = None, user_name: Optional[str] = None) -> schema.User:
     user = None
 
     if user_uuid:
@@ -43,7 +43,7 @@ def read_user(user_uuid: Optional[str] = None, user_name: Optional[str] = None) 
 
     return user
 
-def read_user_by_user_uuid(user_uuid: str) -> User:
+def read_user_by_user_uuid(user_uuid: str) -> schema.User:
     user = None
 
     with connection.cursor() as cursor:
@@ -63,7 +63,7 @@ def read_user_by_user_uuid(user_uuid: str) -> User:
         """)
         data = cursor.fetchone()
         if data:
-            user = User(
+            user = schema.User(
                 user_uuid = data[0],
                 user_name = data[1],
                 hashed_password = data[2],
@@ -75,7 +75,7 @@ def read_user_by_user_uuid(user_uuid: str) -> User:
 
     return user
 
-def read_user_by_user_name(user_name: str) -> User:
+def read_user_by_user_name(user_name: str) -> schema.User:
     user = None
 
     with connection.cursor() as cursor:
@@ -95,7 +95,7 @@ def read_user_by_user_name(user_name: str) -> User:
         """)
         data = cursor.fetchone()
         if data:
-            user = User(
+            user = schema.User(
                 user_uuid = data[0],
                 user_name = data[1],
                 hashed_password = data[2],
