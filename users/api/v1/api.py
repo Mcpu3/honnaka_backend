@@ -34,7 +34,7 @@ def signup(request_body: schema.SignUp):
     if (not user_name) or (not password):
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
     user = schema.User(
-        user_uuid = uuid4(),
+        user_uuid = str(uuid4()),
         user_name = user_name,
         hashed_password = CryptContext(["bcrypt"]).hash(password),
         created_at = datetime.now()
