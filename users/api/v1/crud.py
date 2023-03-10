@@ -17,20 +17,20 @@ def create_user(user: schema.User):
     deleted = 0
     with connection.cursor() as cursor:
         cursor.execute(f"""
-        insert into users (
-            user_uuid,
-            user_name,
-            hashed_password,
-            created_at,
-            deleted
-        )
-        values (
-            '{user_uuid}',
-            '{user_name}',
-            '{hashed_password}',
-            '{created_at}',
-            {deleted}
-        )
+            insert into users (
+                user_uuid,
+                user_name,
+                hashed_password,
+                created_at,
+                deleted
+            )
+            values (
+                '{user_uuid}',
+                '{user_name}',
+                '{hashed_password}',
+                '{created_at}',
+                {deleted}
+            )
         """)
 
 def read_user(user_uuid: Optional[str] = None, user_name: Optional[str] = None) -> schema.User:
