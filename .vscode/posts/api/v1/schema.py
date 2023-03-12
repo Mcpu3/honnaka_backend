@@ -17,7 +17,6 @@ class Post(BaseModel):
     updated_at: Optional[datetime]
 
 class Reaction(BaseModel):
-    post_uuid: str
     like: int
     super_like: int
 
@@ -30,6 +29,4 @@ class NewPost(BaseModel):
     image: Optional[str]
     body:str
 
-class Reactions(BaseModel):
-    reactions: list[Reaction]
 

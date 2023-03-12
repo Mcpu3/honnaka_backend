@@ -17,11 +17,11 @@ def get_post(post_uuid: str) -> schema.Post:
     
     return post
 
-@api_router.get("/post/{post_uuid}/reactions")#よくわからんくて断念
+@api_router.get("/post/{post_uuid}/reactions")
 def get_reactions(post_uuid: str) -> schema.Reaction:
-    reaction = crud.read_reaction(post_uuid)
+    reactions = crud.read_reactions(post_uuid)
 
-    return reaction
+    return reactions
 
 @api_router.post("/post/")
 def post_new_post(request_body: schema.NewPost):
@@ -34,7 +34,8 @@ def post_new_post(request_body: schema.NewPost):
         image = request_body.image,
         body = request_body.body,        
     )
-    crud.create_new_post(post)
+    user = get_current_user()  #たぶんこういうこと
+    crud.create_new_post(post,user)
 
     return status.HTTP_201_CREATED
 
