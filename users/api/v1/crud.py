@@ -9,12 +9,12 @@ import users.api.v1.schema as schema
 
 connection = pyodbc.connect("Driver={ODBC Driver 17 for SQL Server};Server=tcp:honnaka-backend.database.windows.net,1433;Database=honnaka-backend;Uid=iwamoto.keisuke629@honnaka-backend;Pwd={%s};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;" % os.getenv("PASSWORD"))
 
-def create_user(user: schema.User):
+def create_user(user: schema.PrivateUser):
     user_uuid = user.user_uuid
     user_name = user.user_name
     hashed_password = user.hashed_password
     created_at = user.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    deleted = 0
+    deleted = int(user.deleted)
     with connection.cursor() as cursor:
         cursor.execute(f"""
             insert into users (
@@ -33,7 +33,7 @@ def create_user(user: schema.User):
             )
         """)
 
-def read_user(user_uuid: Optional[str] = None, user_name: Optional[str] = None) -> schema.User:
+def read_user(user_uuid: Optional[str] = None, user_name: Optional[str] = None) -> schema.PrivateUser:
     user = None
 
     if user_uuid:
@@ -43,7 +43,7 @@ def read_user(user_uuid: Optional[str] = None, user_name: Optional[str] = None) 
 
     return user
 
-def read_user_by_user_uuid(user_uuid: str) -> schema.User:
+def read_user_by_user_uuid(user_uuid: str) -> schema.PrivateUser:
     user = None
 
     with connection.cursor() as cursor:
@@ -63,7 +63,7 @@ def read_user_by_user_uuid(user_uuid: str) -> schema.User:
         """)
         data = cursor.fetchone()
         if data:
-            user = schema.User(
+            user = schema.PrivateUser(
                 user_uuid = data[0],
                 user_name = data[1],
                 hashed_password = data[2],
@@ -75,7 +75,7 @@ def read_user_by_user_uuid(user_uuid: str) -> schema.User:
 
     return user
 
-def read_user_by_user_name(user_name: str) -> schema.User:
+def read_user_by_user_name(user_name: str) -> schema.PrivateUser:
     user = None
 
     with connection.cursor() as cursor:
@@ -95,7 +95,7 @@ def read_user_by_user_name(user_name: str) -> schema.User:
         """)
         data = cursor.fetchone()
         if data:
-            user = schema.User(
+            user = schema.PrivateUser(
                 user_uuid = data[0],
                 user_name = data[1],
                 hashed_password = data[2],
@@ -107,7 +107,7 @@ def read_user_by_user_name(user_name: str) -> schema.User:
 
     return user
 
-def update_hashed_password(user_name: str, hashed_password: str, updated_at: datetime):
+def update_hashed_password(user_uuid: str, hashed_password: str, updated_at: datetime):
     updated_at = updated_at.strftime("%Y-%m-%d %H:%M:%S")
     with connection.cursor() as cursor:
         cursor.execute(f"""
@@ -116,11 +116,11 @@ def update_hashed_password(user_name: str, hashed_password: str, updated_at: dat
                 hashed_password = '{hashed_password}',
                 updated_at = '{updated_at}'
             where
-                user_name = '{user_name}' and
+                user_uuid = '{user_uuid}' and
                 deleted = 0
         """)
 
-def update_display_name(user_name: str, display_name: str, updated_at: datetime):
+def update_display_name(user_uuid: str, display_name: str, updated_at: datetime):
     updated_at = updated_at.strftime("%Y-%m-%d %H:%M:%S")
     with connection.cursor() as cursor:
         cursor.execute(f"""
@@ -129,6 +129,6 @@ def update_display_name(user_name: str, display_name: str, updated_at: datetime)
                 display_name = '{display_name}',
                 updated_at = '{updated_at}'
             where
-                user_name = '{user_name}' and
+                user_uuid = '{user_uuid}' and
                 deleted = 0
         """)
