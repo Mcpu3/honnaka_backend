@@ -107,6 +107,17 @@ def read_user_by_user_name(user_name: str) -> schema.PrivateUser:
 
     return user
 
+def delete_user(user_uuid: str):
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            update users
+            set
+                deleted = 1
+            where
+                user_uuid = '{user_uuid}' and
+                deleted = 0
+        """)
+
 def update_hashed_password(user_uuid: str, hashed_password: str, updated_at: datetime):
     updated_at = updated_at.strftime("%Y-%m-%d %H:%M:%S")
     with connection.cursor() as cursor:
@@ -282,6 +293,17 @@ def read_posts_by_user_uuid(user_uuid: str) -> schema.Posts:
     )
 
     return posts
+
+def delete_post(post_uuid: str):
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            update posts
+            set
+                deleted = 1
+            where
+                post_uuid = '{post_uuid}' and
+                deleted = 0
+        """)
 
 def create_tag(tag: schema.Tag):
     tag_uuid = tag.tag_uuid
