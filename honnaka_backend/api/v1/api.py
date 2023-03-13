@@ -230,12 +230,18 @@ def get_reactioned_post(post_uuid: str,current_user: schema.PrivateUser = Depend
 
 @api_router.post("/user/reaction/{post_uuid}")
 def post_reaction(request_body: schema.Reaction,post_uuid: str, current_user: schema.PrivateUser = Depends(get_current_user)):
+    if (request_body.like is None ) or (request_body.super_like is None):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST)
+    like , super_like = False , False
     if request_body.like:
         like = True
     if request_body.super_like:
         super_like = True
+    past_reaction = crud.read_reactioned_post(post_uuid,current_user.user_uuid)
+    if past_reaction:
+        crud.update_reaction(past_reaction.reaction_uuid) 
     reaction = schema.NewReaction(
-        reaction_uuid = str(uuid4),
+        reaction_uuid = str(uuid4()),
         post_uuid = post_uuid,
         user_uuid = current_user.user_uuid,
         like = like,

@@ -534,7 +534,7 @@ def create_reaction(reaction: schema.NewReaction):
                 reaction_uuid,
                 post_uuid,
                 user_uuid,
-                like,
+                normal_like,
                 super_like,
                 created_at,
                 deleted
@@ -560,7 +560,7 @@ def read_reactioned_posts(user_uuid: str):
                 post_uuid
             where
                 user_uuid = '{user_uuid}' and
-                like = True
+                normal_like = 1
         """)
         liked_posts = cursor.fetchall()
         cursor.execute_(f"""
@@ -568,7 +568,7 @@ def read_reactioned_posts(user_uuid: str):
                 post_uuid
             where
                 user_uuid = '{user_uuid}' and
-                super_like = True
+                super_like = 1
         """)
         super_liked_posts = cursor.fetchall()
 
@@ -585,8 +585,10 @@ def read_reactioned_post(post_uuid: str,user_uuid: str):
     with connection.cursor() as cursor:
         cursor.execute(f"""
             select
+                reaction_uuid,
+                user_uuid,
                 post_uuid,
-                like,
+                normal_like,
                 super_like,
                 created_at,
                 updated_at
@@ -597,6 +599,9 @@ def read_reactioned_post(post_uuid: str,user_uuid: str):
         reactioned_post = cursor.fetchone()
     
     return reactioned_post
+
+def update_reaction(reaction_uuid: str):
+
 
 
 
