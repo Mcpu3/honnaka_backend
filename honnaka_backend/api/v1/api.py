@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import random
+from typing import List
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -129,7 +130,7 @@ def post_new_post(request_body: schema.NewPost, current_user: schema.PrivateUser
     summary = "summary"
     tags_uuid = []
     for body in request_body.tags:
-        tag = crud.read_tag(body)
+        tag = crud.read_tag(body = body)
         if not tag:
             tag = schema.Tag(
                 tag_uuid = str(uuid4()),
@@ -175,3 +176,21 @@ def get_reactions(post_uuid: str) -> schema.Reaction:
     reactions = crud.read_reactions(post_uuid)
 
     return reactions
+
+@api_router.get("/tags", response_model = List[schema.Tag])
+def get_tags(like: str) -> List[schema.Tag]:
+    if not like:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST)
+    tags = crud.read_tags(like)
+    if len(tags) == 0:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+
+    return tags
+
+@api_router.get("/tag/{tag_uuid}")
+def get_tag(tag_uuid: str) -> schema.Tag:
+    tag = crud.read_tag(tag_uuid = tag_uuid)
+    if not tag:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    
+    return tag
