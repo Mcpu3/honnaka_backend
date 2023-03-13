@@ -2,7 +2,7 @@ import azure.functions as func
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from users.api.v1 import api
+from honnaka_backend.api.v1 import api
 
 
 app = FastAPI()
