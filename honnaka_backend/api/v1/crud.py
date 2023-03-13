@@ -134,107 +134,6 @@ def update_display_name(user_uuid: str, display_name: str, updated_at: datetime)
                 deleted = 0
         """)
 
-def read_posts() -> List[schema.Post]:
-    posts = []
-
-    with connection.cursor() as cursor:
-        cursor.execute(f"""
-            select
-                post_uuid,
-                user_uuid,
-                title,
-                summary,
-                tags_uuid,
-                website,
-                location_uuid,
-                since,
-                image_uuid,
-                body,
-                created_at,
-                updated_at
-            from posts
-            where
-                deleted = 0
-        """)
-        data = cursor.fetchall()
-        for element_of_data in data:
-            post = schema.Post(
-                post_uuid = element_of_data[0],
-                user_uuid = element_of_data[1],
-                title = element_of_data[2],
-                summary = element_of_data[3],
-                tags_uuid = json.loads(element_of_data[4]),
-                website = element_of_data[5],
-                location_uuid = element_of_data[6],
-                since = element_of_data[7],
-                image_uuid = element_of_data[8],
-                body = element_of_data[9],
-                created_at = element_of_data[10],
-                updated_at = element_of_data[11]
-            )
-            posts.append(post)
-
-    return posts
-
-def read_post(post_uuid: str) -> schema.Post:
-    post = None
-
-    with connection.cursor() as cursor:
-        cursor.execute(f"""
-            select
-                post_uuid,
-                user_uuid,
-                title,
-                summary,
-                tags_uuid,
-                website,
-                location_uuid,
-                since,
-                image_uuid,
-                body,
-                created_at,
-                updated_at
-            from posts
-            where
-                post_uuid = '{post_uuid}' and
-                deleted = 0
-        """)
-        data = cursor.fetchone()
-        if data:
-            post = schema.Post(
-                post_uuid = data[0],
-                user_uuid = data[1],
-                title = data[2],
-                summary = data[3],
-                tags_uuid = json.loads(data[4]),
-                website = data[5],
-                location_uuid = data[6],
-                since = data[7],
-                image_uuid = data[8],
-                body = data[9],
-                created_at = data[10],
-                updated_at = data[11]
-            )
-
-    return post
-
-def read_reactions(post_uuid: str):
-    reactions = None
-
-    with connection.cursor() as cursor:
-        cursor.execute(f"""
-            select
-                sum(cast(normal_like as int)),
-                sum(cast(super_like as int))
-            from reactions
-            where
-                post_uuid = '{post_uuid}' and
-                deleted = 0
-        """)
-        reactions = cursor.fetchone()
-
-    return reactions
-
 def create_post(post: schema.Post):
     post_uuid = post.post_uuid
     user_uuid = post.user_uuid
@@ -280,6 +179,90 @@ def create_post(post: schema.Post):
             )
         """)
 
+def read_post(post_uuid: str) -> schema.Post:
+    post = None
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                post_uuid,
+                user_uuid,
+                title,
+                summary,
+                tags_uuid,
+                website,
+                location_uuid,
+                since,
+                image_uuid,
+                body,
+                created_at,
+                updated_at
+            from posts
+            where
+                post_uuid = '{post_uuid}' and
+                deleted = 0
+        """)
+        data = cursor.fetchone()
+        if data:
+            post = schema.Post(
+                post_uuid = data[0],
+                user_uuid = data[1],
+                title = data[2],
+                summary = data[3],
+                tags_uuid = json.loads(data[4]),
+                website = data[5],
+                location_uuid = data[6],
+                since = data[7],
+                image_uuid = data[8],
+                body = data[9],
+                created_at = data[10],
+                updated_at = data[11]
+            )
+
+    return post
+
+def read_posts() -> List[schema.Post]:
+    posts = []
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                post_uuid,
+                user_uuid,
+                title,
+                summary,
+                tags_uuid,
+                website,
+                location_uuid,
+                since,
+                image_uuid,
+                body,
+                created_at,
+                updated_at
+            from posts
+            where
+                deleted = 0
+        """)
+        data = cursor.fetchall()
+        for element_of_data in data:
+            post = schema.Post(
+                post_uuid = element_of_data[0],
+                user_uuid = element_of_data[1],
+                title = element_of_data[2],
+                summary = element_of_data[3],
+                tags_uuid = json.loads(element_of_data[4]),
+                website = element_of_data[5],
+                location_uuid = element_of_data[6],
+                since = element_of_data[7],
+                image_uuid = element_of_data[8],
+                body = element_of_data[9],
+                created_at = element_of_data[10],
+                updated_at = element_of_data[11]
+            )
+            posts.append(post)
+
+    return posts
+
 def create_tag(tag: schema.Tag):
     tag_uuid = tag.tag_uuid
     body = tag.body
@@ -300,7 +283,43 @@ def create_tag(tag: schema.Tag):
             )
         """)
 
-def read_tag(body: str) -> schema.Tag:
+def read_tag(tag_uuid: Optional[str] = None, body: Optional[str] = None) -> schema.Tag:
+    tag = None
+
+    if tag_uuid:
+        tag = read_tag_by_tag_uuid(tag_uuid)
+    if body:
+        tag = read_tag_by_body(body)
+
+    return tag
+
+def read_tag_by_tag_uuid(tag_uuid: str) -> schema.Tag:
+    tag = None
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                tag_uuid,
+                body,
+                created_at,
+                updated_at
+            from tags
+            where
+                tag_uuid = '{tag_uuid}' and
+                deleted = 0
+        """)
+        data = cursor.fetchone()
+        if data:
+            tag = schema.Tag(
+                tag_uuid = data[0],
+                body = data[1],
+                created_at = data[2],
+                updated_at = data[3]
+            )
+
+    return tag
+
+def read_tag_by_body(body: str) -> schema.Tag:
     tag = None
 
     with connection.cursor() as cursor:
@@ -325,6 +344,33 @@ def read_tag(body: str) -> schema.Tag:
             )
 
     return tag
+
+def read_tags(like: str):
+    tags = []
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                tag_uuid,
+                body,
+                created_at,
+                updated_at
+            from tags
+            where
+                body like '%{like}%' and
+                deleted = 0
+        """)
+        data = cursor.fetchall()
+        for element_of_data in data:
+            tag = schema.Tag(
+                tag_uuid = element_of_data[0],
+                body = element_of_data[1],
+                created_at = element_of_data[2],
+                updated_at = element_of_data[3]
+            )
+            tags.append(tag)
+
+    return tags
 
 def create_location(location: schema.Location):
     location_uuid = location.location_uuid
@@ -394,3 +440,20 @@ def create_image(image: schema.Image):
                 0
             )
         """)
+
+def read_reactions(post_uuid: str):
+    reactions = None
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                sum(cast(normal_like as int)),
+                sum(cast(super_like as int))
+            from reactions
+            where
+                post_uuid = '{post_uuid}' and
+                deleted = 0
+        """)
+        reactions = cursor.fetchone()
+
+    return reactions
