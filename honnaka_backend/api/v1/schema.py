@@ -81,6 +81,34 @@ class Image(BaseModel):
     updated_at: Optional[datetime]
 
 
-class Reaction(BaseModel):
+class Reactions(BaseModel):
     like: int
     super_like: int
+
+
+class ReactionedPosts(BaseModel):
+    liked_posts_uuid: List[str]
+    super_liked_posts_uuid: List[str]
+
+
+class ReactionedPost(BaseModel):
+    post_uuid: str
+    like: bool
+    super_like: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+
+class Reaction(BaseModel):
+    like: bool
+    super_like: bool
+
+class NewReaction(BaseModel):
+    reaction_uuid: str
+    user_uuid: str
+    post_uuid: str
+    like: bool
+    super_like: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
+

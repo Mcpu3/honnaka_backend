@@ -210,3 +210,44 @@ def get_location(location_uuid: str) -> schema.Location:
         raise HTTPException(status.HTTP_204_NO_CONTENT)
     
     return location
+
+@api_router.get("/user/reactions",response_model = schema.ReactionedPosts)
+def get_reactioned_posts(current_user: schema.PrivateUser = Depends(get_current_user)):
+    reactioned_posts = crud.read_reactioned_posts(current_user.user_uuid)
+    if len(reactioned_posts) == 0:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    
+    return reactioned_posts
+
+
+@api_router.get("/user/reaction/{post_uuid}",response_model = schema.ReactionedPost)
+def get_reactioned_post(post_uuid: str,current_user: schema.PrivateUser = Depends(get_current_user)):
+    reactioned_post = crud.read_reactioned_post(post_uuid,current_user.user_uuid)
+    if not reactioned_post:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    
+    return reactioned_post
+
+@api_router.post("/user/reaction/{post_uuid}")
+def post_reaction(request_body: schema.Reaction,post_uuid: str, current_user: schema.PrivateUser = Depends(get_current_user)):
+    if request_body.like:
+        like = True
+    if request_body.super_like:
+        super_like = True
+    reaction = schema.NewReaction(
+        reaction_uuid = str(uuid4),
+        post_uuid = post_uuid,
+        user_uuid = current_user.user_uuid,
+        like = like,
+        super_like = super_like,
+        created_at = datetime.now()
+    )
+    crud.create_reaction(reaction)
+
+    return status.HTTP_201_CREATED
+
+
+
+
+
+    

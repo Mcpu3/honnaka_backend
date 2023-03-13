@@ -520,3 +520,83 @@ def read_reactions(post_uuid: str):
         reactions = cursor.fetchone()
 
     return reactions
+
+def create_reaction(reaction: schema.NewReaction):
+    reaction_uuid = reaction.reaction_uuid
+    post_uuid = reaction.post_uuid
+    user_uuid = reaction.user_uuid
+    like = reaction.like
+    super_like = reaction.super_like
+    created_at = reaction.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            insert into reactions (
+                reaction_uuid,
+                post_uuid,
+                user_uuid,
+                like,
+                super_like,
+                created_at,
+                deleted
+            )
+            values (
+                '{reaction_uuid}',
+                '{post_uuid}',
+                '{user_uuid}',
+                '{like}',
+                '{super_like}',
+                '{created_at}',
+                0
+            )
+        """)
+
+def read_reactioned_posts(user_uuid: str):
+    liked_posts = []
+    super_liked_posts = []
+
+    with connection.cursor() as cursor:
+        cursor.execute(f""""
+            select 
+                post_uuid
+            where
+                user_uuid = '{user_uuid}' and
+                like = True
+        """)
+        liked_posts = cursor.fetchall()
+        cursor.execute_(f"""
+            select
+                post_uuid
+            where
+                user_uuid = '{user_uuid}' and
+                super_like = True
+        """)
+        super_liked_posts = cursor.fetchall()
+
+    reactioned_posts = schema.ReactionedPosts(
+        liked_posts_uuid = liked_posts,
+        super_liked_posts_uuid = super_liked_posts
+    )
+
+    return reactioned_posts
+
+def read_reactioned_post(post_uuid: str,user_uuid: str):
+    reactioned_post = None
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                post_uuid,
+                like,
+                super_like,
+                created_at,
+                updated_at
+            where
+                user_uuid = '{user_uuid}' and
+                post_uuid = '{post_uuid}' 
+            """)
+        reactioned_post = cursor.fetchone()
+    
+    return reactioned_post
+
+
+
