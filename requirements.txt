@@ -4,3 +4,7 @@
 
 azure-functions
 fastapi
+passlib[bcrypt]
+pyodbc
+python-jose
+python-multipart
