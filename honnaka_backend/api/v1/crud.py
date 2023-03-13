@@ -504,6 +504,34 @@ def create_image(image: schema.Image):
             )
         """)
 
+def read_image(image_uuid: str) -> schema.Image:
+    image = None
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                image_uuid,
+                user_uuid,
+                body,
+                created_at,
+                updated_at
+            from images
+            where
+                image_uuid = '{image_uuid}' and
+                deleted = 0
+        """)
+        data = cursor.fetchone()
+        if data:
+            image = schema.Image(
+                image_uuid = data[0],
+                user_uuid = data[1],
+                body = data[2],
+                created_at = data[3],
+                updated_at = data[4]
+            )
+
+    return image
+
 def read_reactions(post_uuid: str):
     reactions = None
 
