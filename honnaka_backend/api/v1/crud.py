@@ -224,8 +224,8 @@ def read_reactions(post_uuid: str):
     with connection.cursor() as cursor:
         cursor.execute(f"""
             select
-                sum(normal_like),
-                sum(super_like)
+                sum(cast(normal_like as int)),
+                sum(cast(super_like as int))
             from reactions
             where
                 post_uuid = '{post_uuid}' and
