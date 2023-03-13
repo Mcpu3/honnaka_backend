@@ -15,7 +15,6 @@ def create_user(user: schema.PrivateUser):
     user_name = user.user_name
     hashed_password = user.hashed_password
     created_at = user.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    deleted = int(user.deleted)
     with connection.cursor() as cursor:
         cursor.execute(f"""
             insert into users (
@@ -30,7 +29,7 @@ def create_user(user: schema.PrivateUser):
                 '{user_name}',
                 '{hashed_password}',
                 '{created_at}',
-                {deleted}
+                0
             )
         """)
 
@@ -146,7 +145,6 @@ def create_post(post: schema.Post):
     image_uuid = post.image_uuid
     body = post.body
     created_at = post.created_at.strftime("%Y-%m-%d %H:%M:%S")
-
     with connection.cursor() as cursor:
         cursor.execute(f"""
             insert into posts(
@@ -263,6 +261,28 @@ def read_posts() -> List[schema.Post]:
 
     return posts
 
+def read_posts_by_user_uuid(user_uuid: str) -> schema.Posts:
+    posts_uuid = []
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                post_uuid
+            from posts
+            where
+                user_uuid = '{user_uuid}' and
+                deleted = 0
+        """)
+        data = cursor.fetchall()
+        for element_of_data in data:
+            post_uuid = element_of_data[0]
+            posts_uuid.append(post_uuid)
+    posts = schema.Posts(
+        posts_uuid = posts_uuid
+    )
+
+    return posts
+
 def create_tag(tag: schema.Tag):
     tag_uuid = tag.tag_uuid
     body = tag.body
@@ -345,7 +365,7 @@ def read_tag_by_body(body: str) -> schema.Tag:
 
     return tag
 
-def read_tags(like: str):
+def read_tags(like: str) -> List[schema.Tag]:
     tags = []
 
     with connection.cursor() as cursor:
@@ -532,7 +552,7 @@ def read_image(image_uuid: str) -> schema.Image:
 
     return image
 
-def read_reactions(post_uuid: str):
+def read_reactions(post_uuid: str) -> schema.Reactions:
     reactions = None
 
     with connection.cursor() as cursor:
@@ -545,7 +565,12 @@ def read_reactions(post_uuid: str):
                 post_uuid = '{post_uuid}' and
                 deleted = 0
         """)
-        reactions = cursor.fetchone()
+        data = cursor.fetchone()
+        if data:
+            reactions = schema.Reactions(
+                like = data[0],
+                super_like = data[1]
+            )
 
     return reactions
 
@@ -578,7 +603,7 @@ def create_reaction(reaction: schema.Reaction):
             )
         """)
 
-def read_reaction(reaction_uuid: Optional[str] = None, user_uuid: Optional[str] = None, post_uuid: Optional[str] = None):
+def read_reaction(reaction_uuid: Optional[str] = None, user_uuid: Optional[str] = None, post_uuid: Optional[str] = None) -> schema.Reaction:
     reaction = None
 
     if reaction_uuid:
@@ -606,15 +631,16 @@ def read_reaction_by_reaction_uuid(reaction_uuid: str) -> schema.Reaction:
                 reaction_uuid = '{reaction_uuid}'
             """)
         data = cursor.fetchone()
-        reaction = schema.Reaction(
-            reaction_uuid = data[0],
-            user_uuid = data[1],
-            post_uuid = data[2],
-            like = data[3],
-            super_like = data[4],
-            created_at = data[5],
-            updated_at = data[6]
-        )
+        if data:
+            reaction = schema.Reaction(
+                reaction_uuid = data[0],
+                user_uuid = data[1],
+                post_uuid = data[2],
+                like = data[3],
+                super_like = data[4],
+                created_at = data[5],
+                updated_at = data[6]
+            )
 
     return reaction
 
@@ -637,15 +663,16 @@ def read_reaction_by_user_uuid_and_post_uuid(user_uuid: str, post_uuid: str) -> 
                 post_uuid = '{post_uuid}'
             """)
         data = cursor.fetchone()
-        reaction = schema.Reaction(
-            reaction_uuid = data[0],
-            user_uuid = data[1],
-            post_uuid = data[2],
-            like = data[3],
-            super_like = data[4],
-            created_at = data[5],
-            updated_at = data[6]
-        )
+        if data:
+            reaction = schema.Reaction(
+                reaction_uuid = data[0],
+                user_uuid = data[1],
+                post_uuid = data[2],
+                like = data[3],
+                super_like = data[4],
+                created_at = data[5],
+                updated_at = data[6]
+            )
     
     return reaction
 
