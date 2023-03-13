@@ -114,7 +114,7 @@ def get_posts(current_user: schema.PrivateUser = Depends(get_current_user)) -> s
 def get_reaction(post_uuid: str, current_user: schema.PrivateUser = Depends(get_current_user)) -> schema.Reaction:
     reaction = crud.read_reaction(user_uuid = current_user.user_uuid, post_uuid = post_uuid)
     if not reaction:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
     
     return reaction
 
@@ -124,11 +124,15 @@ def get_reactioned_posts(current_user: schema.PrivateUser = Depends(get_current_
 
     return reacted_posts
 
+@api_router.post("/me/delete")
+def delete_user(current_user: schema.PrivateUser = Depends(get_current_user)):
+    crud.delete_user(current_user.user_uuid)
+
 @api_router.get("/user/{user_uuid}", response_model = schema.User)
 def get_user(user_uuid: str) -> schema.User:
     user = crud.read_user_by_user_uuid(user_uuid)
     if not user:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
 
     return user
 
@@ -145,9 +149,20 @@ def get_post() -> schema.Post:
 def get_post(post_uuid: str) -> schema.Post:
     post = crud.read_post(post_uuid)
     if not post:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
     
     return post
+
+@api_router.post("/post/{post_uuid}/delete")
+def delete_post(post_uuid: str, current_user: schema.PrivateUser = Depends(get_current_user)):
+    post = crud.read_post(post_uuid)
+    if not post:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    if not post.user_uuid != current_user.user_uuid:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED)
+    crud.delete_post(post_uuid)
+
+    return status.HTTP_201_CREATED
 
 @api_router.post("/post")
 def post_new_post(request_body: schema.NewPost, current_user: schema.PrivateUser = Depends(get_current_user)):
@@ -209,6 +224,9 @@ def post_new_post(request_body: schema.NewPost, current_user: schema.PrivateUser
 
 @api_router.get("/post/{post_uuid}/reactions")
 def get_reactions(post_uuid: str) -> schema.Reactions:
+    post = crud.read_post(post_uuid)
+    if not post:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
     reactions = crud.read_reactions(post_uuid)
 
     return reactions
@@ -234,11 +252,22 @@ def post_reaction(post_uuid: str, request_body: schema.NewReaction, current_user
 
     return status.HTTP_201_CREATED
 
+@api_router.post("/post/{post_uuid}/delete")
+def delete_post(post_uuid: str, current_user: schema.PrivateUser = Depends(get_current_user)):
+    post = crud.read_post(post_uuid)
+    if not post:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    if not post.user_uuid != current_user.user_uuid:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED)
+    crud.delete_post(post_uuid)
+
+    return status.HTTP_201_CREATED
+
 @api_router.get("/tag/{tag_uuid}", response_model = schema.Tag)
 def get_tag(tag_uuid: str) -> schema.Tag:
     tag = crud.read_tag(tag_uuid = tag_uuid)
     if not tag:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
     
     return tag
 
@@ -247,8 +276,6 @@ def get_tags(like: str) -> List[schema.Tag]:
     if not like:
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
     tags = crud.read_tags(like)
-    if len(tags) == 0:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
 
     return tags
 
@@ -256,15 +283,13 @@ def get_tags(like: str) -> List[schema.Tag]:
 def get_location(location_uuid: str) -> schema.Location:
     location = crud.read_location(location_uuid = location_uuid)
     if not location:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
     
     return location
 
 @api_router.get("/locations", response_model = List[schema.Location])
 def get_locations(like: str) -> List[schema.Location]:
     locations = crud.read_locations(like)
-    if len(locations) == 0:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
 
     return locations
 
@@ -272,6 +297,6 @@ def get_locations(like: str) -> List[schema.Location]:
 def get_image(image_uuid: str) -> schema.Image:
     image = crud.read_image(image_uuid)
     if not image:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
 
     return image
