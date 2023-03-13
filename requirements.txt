@@ -4,6 +4,7 @@
 
 azure-functions
 fastapi
+openai
 passlib[bcrypt]
 pyodbc
 python-jose

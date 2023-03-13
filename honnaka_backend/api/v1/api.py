@@ -1,12 +1,14 @@
 from datetime import datetime
 import os
 import random
+import re
 from typing import List
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
+import openai
 from passlib.context import CryptContext
 
 import honnaka_backend.api.v1.crud as crud
@@ -127,7 +129,17 @@ def get_post(post_uuid: str) -> schema.Post:
 
 @api_router.post("/post")
 def post_new_post(request_body: schema.NewPost, current_user: schema.PrivateUser = Depends(get_current_user)):
-    summary = "summary"
+    openai.api_key = os.getenv("OPENAI_SECRET_KEY")
+    data = openai.Completion.create(
+        model = "text-davinci-003",
+        prompt = request_body.body + f"これは{request_body.location}で行うことが多く、{request_body.since}から継続しています。" + "日本語の要約文:",
+        temperature = 0.7,
+        max_tokens = 140,
+        top_p = 1.0,
+        frequency_penalty = 0.0,
+        presence_penalty = 1
+    )
+    summary = re.sub("[\n']", "", data["choices"][0]["text"])
     tags_uuid = []
     for body in request_body.tags:
         tag = crud.read_tag(body = body)
@@ -139,7 +151,7 @@ def post_new_post(request_body: schema.NewPost, current_user: schema.PrivateUser
             )
             crud.create_tag(tag)
         tags_uuid.append(tag.tag_uuid)
-    location = crud.read_location(request_body.location)
+    location = crud.read_location(body = request_body.location)
     if not location:
         location = schema.Location(
             location_uuid = str(uuid4()),
@@ -211,6 +223,14 @@ def get_location(location_uuid: str) -> schema.Location:
     
     return location
 
+@api_router.get("/image/{image_uuid}", response_model = schema.Image)
+def get_image(image_uuid: str) -> schema.Image:
+    image = crud.read_image(image_uuid)
+    if not image:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    
+    return image
+
 @api_router.get("/user/reactions",response_model = schema.ReactionedPosts)
 def get_reactioned_posts(current_user: schema.PrivateUser = Depends(get_current_user)):
     reactioned_posts = crud.read_reactioned_posts(current_user.user_uuid)
@@ -251,9 +271,3 @@ def post_reaction(request_body: schema.Reaction,post_uuid: str, current_user: sc
     crud.create_reaction(reaction)
 
     return status.HTTP_201_CREATED
-
-
-
-
-
-    
