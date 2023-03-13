@@ -66,7 +66,7 @@ def signin(request_body: OAuth2PasswordRequestForm = Depends()) -> schema.Token:
 
     return token
 
-@api_router.get("/user", response_model = schema.User)
+@api_router.get("/me", response_model = schema.User)
 def get_user(current_user: schema.PrivateUser = Depends(get_current_user)) -> schema.User:
     user = schema.User(
         user_uuid = current_user.user_uuid,
@@ -78,7 +78,7 @@ def get_user(current_user: schema.PrivateUser = Depends(get_current_user)) -> sc
 
     return user
 
-@api_router.post("/user/update_password")
+@api_router.post("/me/update_password")
 def update_password(request_body: schema.Password, current_user: schema.PrivateUser = Depends(get_current_user)):
     old_password = request_body.old_password
     new_password = request_body.new_password
@@ -92,7 +92,7 @@ def update_password(request_body: schema.Password, current_user: schema.PrivateU
 
     return status.HTTP_201_CREATED
 
-@api_router.post("/user/update_display_name")
+@api_router.post("/me/update_display_name")
 def update_display_name(request_body: schema.DisplayName, current_user: schema.PrivateUser = Depends(get_current_user)):
     display_name = request_body.display_name
     if not display_name:
@@ -228,46 +228,40 @@ def get_image(image_uuid: str) -> schema.Image:
     image = crud.read_image(image_uuid)
     if not image:
         raise HTTPException(status.HTTP_204_NO_CONTENT)
-    
+
     return image
 
-@api_router.get("/user/reactions",response_model = schema.ReactionedPosts)
-def get_reactioned_posts(current_user: schema.PrivateUser = Depends(get_current_user)):
-    reactioned_posts = crud.read_reactioned_posts(current_user.user_uuid)
-    if len(reactioned_posts) == 0:
+@api_router.get("/me/reactions", response_model = schema.ReactedPosts)
+def get_reactioned_posts(current_user: schema.PrivateUser = Depends(get_current_user)) -> schema.ReactedPosts:
+    reacted_posts = crud.read_reacted_posts(current_user.user_uuid)
+
+    return reacted_posts
+
+@api_router.get("/me/reaction/{post_uuid}", response_model = schema.Reaction)
+def get_reaction(post_uuid: str, current_user: schema.PrivateUser = Depends(get_current_user)) -> schema.Reaction:
+    reaction = crud.read_reaction(user_uuid = current_user.user_uuid, post_uuid = post_uuid)
+    if not reaction:
         raise HTTPException(status.HTTP_204_NO_CONTENT)
     
-    return reactioned_posts
+    return reaction
 
-
-@api_router.get("/user/reaction/{post_uuid}",response_model = schema.ReactionedPost)
-def get_reactioned_post(post_uuid: str,current_user: schema.PrivateUser = Depends(get_current_user)):
-    reactioned_post = crud.read_reactioned_post(post_uuid,current_user.user_uuid)
-    if not reactioned_post:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
-    
-    return reactioned_post
-
-@api_router.post("/user/reaction/{post_uuid}")
-def post_reaction(request_body: schema.Reaction,post_uuid: str, current_user: schema.PrivateUser = Depends(get_current_user)):
-    if (request_body.like is None ) or (request_body.super_like is None):
+@api_router.post("/reaction/{post_uuid}")
+def post_reaction(post_uuid: str, request_body: schema.NewReaction, current_user: schema.PrivateUser = Depends(get_current_user)):
+    if (request_body.like is None) or (request_body.super_like is None):
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
-    like , super_like = False , False
-    if request_body.like:
-        like = True
-    if request_body.super_like:
-        super_like = True
-    past_reaction = crud.read_reactioned_post(post_uuid,current_user.user_uuid)
-    if past_reaction:
-        crud.update_reaction(past_reaction.reaction_uuid) 
-    reaction = schema.NewReaction(
-        reaction_uuid = str(uuid4()),
-        post_uuid = post_uuid,
-        user_uuid = current_user.user_uuid,
-        like = like,
-        super_like = super_like,
-        created_at = datetime.now()
-    )
-    crud.create_reaction(reaction)
+    old_reaction = crud.read_reaction(user_uuid = current_user.user_uuid, post_uuid = post_uuid)
+    if not old_reaction:
+        reaction = schema.Reaction(
+            reaction_uuid = str(uuid4()),
+            user_uuid = current_user.user_uuid,
+            post_uuid = post_uuid,
+            like = int(request_body.like),
+            super_like = int(request_body.super_like),
+            created_at = datetime.now()
+        )
+        crud.create_reaction(reaction)
+    else:
+        updated_at = datetime.now()
+        crud.update_reaction(old_reaction.reaction_uuid, request_body.like, request_body.super_like, updated_at)
 
     return status.HTTP_201_CREATED
