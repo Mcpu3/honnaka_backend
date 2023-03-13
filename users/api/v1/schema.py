@@ -7,20 +7,20 @@ class Token(BaseModel):
     access_token: str
 
 
-class PublicUser(BaseModel):
+class User(BaseModel):
+    user_uuid: str
     user_name: str
     display_name: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
 
 
-class User(PublicUser):
-    user_uuid: str
+class PrivateUser(User):
     hashed_password: str
     deleted: bool
 
 
-class SignUp(BaseModel):
+class Signup(BaseModel):
     user_name: str
     password: str
 
