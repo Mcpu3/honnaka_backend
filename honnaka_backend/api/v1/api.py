@@ -187,10 +187,26 @@ def get_tags(like: str) -> List[schema.Tag]:
 
     return tags
 
-@api_router.get("/tag/{tag_uuid}")
+@api_router.get("/tag/{tag_uuid}", response_model = schema.Tag)
 def get_tag(tag_uuid: str) -> schema.Tag:
     tag = crud.read_tag(tag_uuid = tag_uuid)
     if not tag:
         raise HTTPException(status.HTTP_204_NO_CONTENT)
     
     return tag
+
+@api_router.get("/locations", response_model = List[schema.Location])
+def get_locations(like: str) -> List[schema.Location]:
+    locations = crud.read_locations(like)
+    if len(locations) == 0:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+
+    return locations
+
+@api_router.get("/location/{location_uuid}", response_model = schema.Location)
+def get_location(location_uuid: str) -> schema.Location:
+    location = crud.read_location(location_uuid = location_uuid)
+    if not location:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    
+    return location

@@ -392,7 +392,43 @@ def create_location(location: schema.Location):
             )
         """)
 
-def read_location(body: str) -> schema.Location:
+def read_location(location_uuid: Optional[str] = None, body: Optional[str] = None) -> schema.Location:
+    location = None
+
+    if location_uuid:
+        location = read_location_by_location_uuid(location_uuid)
+    if body:
+        location = read_location_by_body(body)
+
+    return location
+
+def read_location_by_location_uuid(location_uuid: str) -> schema.Location:
+    location = None
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                location_uuid,
+                body,
+                created_at,
+                updated_at
+            from locations
+            where
+                location_uuid = '{location_uuid}' and
+                deleted = 0
+        """)
+        data = cursor.fetchone()
+        if data:
+            location = schema.Location(
+                location_uuid = data[0],
+                body = data[1],
+                created_at = data[2],
+                updated_at = data[3]
+            )
+
+    return location
+
+def read_location_by_body(body: str) -> schema.Location:
     location = None
 
     with connection.cursor() as cursor:
@@ -417,6 +453,33 @@ def read_location(body: str) -> schema.Location:
             )
 
     return location
+
+def read_locations(like: str) -> List[schema.Location]:
+    locations = []
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                location_uuid,
+                body,
+                created_at,
+                updated_at
+            from locations
+            where
+                body like '%{like}%' and
+                deleted = 0
+        """)
+        data = cursor.fetchall()
+        for element_of_data in data:
+            location = schema.Location(
+                location_uuid = element_of_data[0],
+                body = element_of_data[1],
+                created_at = element_of_data[2],
+                updated_at = element_of_data[3]
+            )
+            locations.append(location)
+
+    return locations
 
 def create_image(image: schema.Image):
     image_uuid = image.image_uuid
