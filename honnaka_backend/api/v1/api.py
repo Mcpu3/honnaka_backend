@@ -210,3 +210,11 @@ def get_location(location_uuid: str) -> schema.Location:
         raise HTTPException(status.HTTP_204_NO_CONTENT)
     
     return location
+
+@api_router.get("/image/{image_uuid}", response_model = schema.Image)
+def get_image(image_uuid: str) -> schema.Image:
+    image = crud.read_image(image_uuid)
+    if not image:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    
+    return image
