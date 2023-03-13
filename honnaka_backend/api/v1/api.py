@@ -37,12 +37,14 @@ def signup(request_body: schema.Signup):
     password = request_body.password
     if (not user_name) or (not password):
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
+    user = crud.read_user(user_name = user_name)
+    if user:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST)
     user = schema.PrivateUser(
         user_uuid = str(uuid4()),
         user_name = user_name,
         hashed_password = CryptContext(["bcrypt"]).hash(password),
-        created_at = datetime.now(),
-        deleted = False
+        created_at = datetime.now()
     )
     crud.create_user(user)
 
@@ -102,6 +104,26 @@ def update_display_name(request_body: schema.DisplayName, current_user: schema.P
 
     return status.HTTP_201_CREATED
 
+@api_router.get("/me/posts", response_model = schema.Posts)
+def get_posts(current_user: schema.PrivateUser = Depends(get_current_user)) -> schema.Posts:
+    posts = crud.read_posts_by_user_uuid(current_user.user_uuid)
+    
+    return posts
+
+@api_router.get("/me/reaction/{post_uuid}", response_model = schema.Reaction)
+def get_reaction(post_uuid: str, current_user: schema.PrivateUser = Depends(get_current_user)) -> schema.Reaction:
+    reaction = crud.read_reaction(user_uuid = current_user.user_uuid, post_uuid = post_uuid)
+    if not reaction:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    
+    return reaction
+
+@api_router.get("/me/reactions", response_model = schema.ReactedPosts)
+def get_reactioned_posts(current_user: schema.PrivateUser = Depends(get_current_user)) -> schema.ReactedPosts:
+    reacted_posts = crud.read_reacted_posts(current_user.user_uuid)
+
+    return reacted_posts
+
 @api_router.get("/user/{user_uuid}", response_model = schema.User)
 def get_user(user_uuid: str) -> schema.User:
     user = crud.read_user_by_user_uuid(user_uuid)
@@ -129,6 +151,8 @@ def get_post(post_uuid: str) -> schema.Post:
 
 @api_router.post("/post")
 def post_new_post(request_body: schema.NewPost, current_user: schema.PrivateUser = Depends(get_current_user)):
+    if (not request_body.title) or (not request_body.body):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST)
     openai.api_key = os.getenv("OPENAI_SECRET_KEY")
     data = openai.Completion.create(
         model = "text-davinci-003",
@@ -184,68 +208,12 @@ def post_new_post(request_body: schema.NewPost, current_user: schema.PrivateUser
     return status.HTTP_201_CREATED
 
 @api_router.get("/post/{post_uuid}/reactions")
-def get_reactions(post_uuid: str) -> schema.Reaction:
+def get_reactions(post_uuid: str) -> schema.Reactions:
     reactions = crud.read_reactions(post_uuid)
 
     return reactions
 
-@api_router.get("/tags", response_model = List[schema.Tag])
-def get_tags(like: str) -> List[schema.Tag]:
-    if not like:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST)
-    tags = crud.read_tags(like)
-    if len(tags) == 0:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
-
-    return tags
-
-@api_router.get("/tag/{tag_uuid}", response_model = schema.Tag)
-def get_tag(tag_uuid: str) -> schema.Tag:
-    tag = crud.read_tag(tag_uuid = tag_uuid)
-    if not tag:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
-    
-    return tag
-
-@api_router.get("/locations", response_model = List[schema.Location])
-def get_locations(like: str) -> List[schema.Location]:
-    locations = crud.read_locations(like)
-    if len(locations) == 0:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
-
-    return locations
-
-@api_router.get("/location/{location_uuid}", response_model = schema.Location)
-def get_location(location_uuid: str) -> schema.Location:
-    location = crud.read_location(location_uuid = location_uuid)
-    if not location:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
-    
-    return location
-
-@api_router.get("/image/{image_uuid}", response_model = schema.Image)
-def get_image(image_uuid: str) -> schema.Image:
-    image = crud.read_image(image_uuid)
-    if not image:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
-
-    return image
-
-@api_router.get("/me/reactions", response_model = schema.ReactedPosts)
-def get_reactioned_posts(current_user: schema.PrivateUser = Depends(get_current_user)) -> schema.ReactedPosts:
-    reacted_posts = crud.read_reacted_posts(current_user.user_uuid)
-
-    return reacted_posts
-
-@api_router.get("/me/reaction/{post_uuid}", response_model = schema.Reaction)
-def get_reaction(post_uuid: str, current_user: schema.PrivateUser = Depends(get_current_user)) -> schema.Reaction:
-    reaction = crud.read_reaction(user_uuid = current_user.user_uuid, post_uuid = post_uuid)
-    if not reaction:
-        raise HTTPException(status.HTTP_204_NO_CONTENT)
-    
-    return reaction
-
-@api_router.post("/reaction/{post_uuid}")
+@api_router.post("/post/{post_uuid}/reaction")
 def post_reaction(post_uuid: str, request_body: schema.NewReaction, current_user: schema.PrivateUser = Depends(get_current_user)):
     if (request_body.like is None) or (request_body.super_like is None):
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
@@ -265,3 +233,45 @@ def post_reaction(post_uuid: str, request_body: schema.NewReaction, current_user
         crud.update_reaction(old_reaction.reaction_uuid, request_body.like, request_body.super_like, updated_at)
 
     return status.HTTP_201_CREATED
+
+@api_router.get("/tag/{tag_uuid}", response_model = schema.Tag)
+def get_tag(tag_uuid: str) -> schema.Tag:
+    tag = crud.read_tag(tag_uuid = tag_uuid)
+    if not tag:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    
+    return tag
+
+@api_router.get("/tags", response_model = List[schema.Tag])
+def get_tags(like: str) -> List[schema.Tag]:
+    if not like:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST)
+    tags = crud.read_tags(like)
+    if len(tags) == 0:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+
+    return tags
+
+@api_router.get("/location/{location_uuid}", response_model = schema.Location)
+def get_location(location_uuid: str) -> schema.Location:
+    location = crud.read_location(location_uuid = location_uuid)
+    if not location:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    
+    return location
+
+@api_router.get("/locations", response_model = List[schema.Location])
+def get_locations(like: str) -> List[schema.Location]:
+    locations = crud.read_locations(like)
+    if len(locations) == 0:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+
+    return locations
+
+@api_router.get("/image/{image_uuid}", response_model = schema.Image)
+def get_image(image_uuid: str) -> schema.Image:
+    image = crud.read_image(image_uuid)
+    if not image:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+
+    return image

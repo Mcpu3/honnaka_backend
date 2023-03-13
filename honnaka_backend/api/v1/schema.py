@@ -17,7 +17,6 @@ class User(BaseModel):
 
 class PrivateUser(User):
     hashed_password: str
-    deleted: bool
 
 
 class Signup(BaseModel):
@@ -47,6 +46,10 @@ class Post(BaseModel):
     body: str
     created_at: datetime
     updated_at: Optional[datetime]
+
+
+class Posts(BaseModel):
+    posts_uuid: List[str]
 
 
 class NewPost(BaseModel):
@@ -81,11 +84,6 @@ class Image(BaseModel):
     updated_at: Optional[datetime]
 
 
-class Reactions(BaseModel):
-    like: int
-    super_like: int
-
-
 class Reaction(BaseModel):
     reaction_uuid: str
     user_uuid: str
@@ -94,6 +92,11 @@ class Reaction(BaseModel):
     super_like: bool
     created_at: datetime
     updated_at: Optional[datetime]
+
+
+class Reactions(BaseModel):
+    like: int
+    super_like: int
 
 
 class NewReaction(BaseModel):
