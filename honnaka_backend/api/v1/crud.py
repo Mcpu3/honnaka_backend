@@ -548,3 +548,155 @@ def read_reactions(post_uuid: str):
         reactions = cursor.fetchone()
 
     return reactions
+
+def create_reaction(reaction: schema.Reaction):
+    reaction_uuid = reaction.reaction_uuid
+    post_uuid = reaction.post_uuid
+    user_uuid = reaction.user_uuid
+    like = reaction.like
+    super_like = reaction.super_like
+    created_at = reaction.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            insert into reactions (
+                reaction_uuid,
+                post_uuid,
+                user_uuid,
+                normal_like,
+                super_like,
+                created_at,
+                deleted
+            )
+            values (
+                '{reaction_uuid}',
+                '{post_uuid}',
+                '{user_uuid}',
+                '{like}',
+                '{super_like}',
+                '{created_at}',
+                0
+            )
+        """)
+
+def read_reaction(reaction_uuid: Optional[str] = None, user_uuid: Optional[str] = None, post_uuid: Optional[str] = None):
+    reaction = None
+
+    if reaction_uuid:
+        reaction = read_reaction_by_reaction_uuid(reaction_uuid)
+    if user_uuid and post_uuid:
+        reaction = read_reaction_by_user_uuid_and_post_uuid(user_uuid, post_uuid)
+
+    return reaction
+
+def read_reaction_by_reaction_uuid(reaction_uuid: str) -> schema.Reaction:
+    reaction = None
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                reaction_uuid,
+                user_uuid,
+                post_uuid,
+                normal_like,
+                super_like,
+                created_at,
+                updated_at
+            from reactions
+            where
+                reaction_uuid = '{reaction_uuid}'
+            """)
+        data = cursor.fetchone()
+        reaction = schema.Reaction(
+            reaction_uuid = data[0],
+            user_uuid = data[1],
+            post_uuid = data[2],
+            like = data[3],
+            super_like = data[4],
+            created_at = data[5],
+            updated_at = data[6]
+        )
+
+    return reaction
+
+def read_reaction_by_user_uuid_and_post_uuid(user_uuid: str, post_uuid: str) -> schema.Reaction:
+    reaction = None
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                reaction_uuid,
+                user_uuid,
+                post_uuid,
+                normal_like,
+                super_like,
+                created_at,
+                updated_at
+            from reactions
+            where
+                user_uuid = '{user_uuid}' and
+                post_uuid = '{post_uuid}'
+            """)
+        data = cursor.fetchone()
+        reaction = schema.Reaction(
+            reaction_uuid = data[0],
+            user_uuid = data[1],
+            post_uuid = data[2],
+            like = data[3],
+            super_like = data[4],
+            created_at = data[5],
+            updated_at = data[6]
+        )
+    
+    return reaction
+
+def read_reacted_posts(user_uuid: str) -> schema.ReactedPosts:
+    liked_posts_uuid, super_liked_posts_uuid = [], []
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                post_uuid
+            from reactions
+            where
+                user_uuid = '{user_uuid}' and
+                normal_like = 1
+        """)
+        data = cursor.fetchall()
+        for element_of_data in data:
+            liked_post_uuid = element_of_data[0]
+            liked_posts_uuid.append(liked_post_uuid)
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            select
+                post_uuid
+            from reactions
+            where
+                user_uuid = '{user_uuid}' and
+                super_like = 1
+        """)
+        data = cursor.fetchall()
+        for element_of_data in data:
+            super_liked_post_uuid = element_of_data[0]
+            super_liked_posts_uuid.append(super_liked_post_uuid)
+    reacted_posts = schema.ReactedPosts(
+        liked_posts_uuid = liked_posts_uuid,
+        super_liked_posts_uuid = super_liked_posts_uuid
+    )
+
+    return reacted_posts
+
+def update_reaction(reaction_uuid: str, like: bool, super_like: bool, updated_at: datetime):
+    like = int(like)
+    super_like = int(super_like)
+    updated_at = updated_at.strftime("%Y-%m-%d %H:%M:%S")
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            update reactions
+            set
+                normal_like = {like},
+                super_like = {super_like},
+                updated_at = '{updated_at}'
+            where
+                reaction_uuid = '{reaction_uuid}' and
+                deleted = 0
+        """)
