@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import random
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -7,8 +8,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-import users.api.v1.crud as crud
-import users.api.v1.schema as schema
+import honnaka_backend.api.v1.crud as crud
+import honnaka_backend.api.v1.schema as schema
 
 
 api_router = APIRouter()
@@ -105,3 +106,72 @@ def get_user(user_uuid: str) -> schema.User:
         raise HTTPException(status.HTTP_204_NO_CONTENT)
 
     return user
+
+@api_router.get("/post", response_model = schema.Post)
+def get_post() -> schema.Post:
+    posts = crud.read_posts()
+    if len(posts) == 0:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    post = random.choice(posts)
+
+    return post
+
+@api_router.get("/post/{post_uuid}", response_model = schema.Post)
+def get_post(post_uuid: str) -> schema.Post:
+    post = crud.read_post(post_uuid)
+    if not post:
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
+    
+    return post
+
+@api_router.post("/post")
+def post_new_post(request_body: schema.NewPost, current_user: schema.PrivateUser = Depends(get_current_user)):
+    summary = "summary"
+    tags_uuid = []
+    for body in request_body.tags:
+        tag = crud.read_tag(body)
+        if not tag:
+            tag = schema.Tag(
+                tag_uuid = str(uuid4()),
+                body = body,
+                created_at = datetime.now()
+            )
+            crud.create_tag(tag)
+        tags_uuid.append(tag.tag_uuid)
+    location = crud.read_location(request_body.location)
+    if not location:
+        location = schema.Location(
+            location_uuid = str(uuid4()),
+            body = request_body.location,
+            created_at = datetime.now()
+        )
+        crud.create_location(location)
+    image = schema.Image(
+        image_uuid = str(uuid4()),
+        user_uuid = current_user.user_uuid,
+        body = request_body.image,
+        created_at = datetime.now()
+    )
+    crud.create_image(image)
+    post = schema.Post(
+        post_uuid = str(uuid4()),
+        user_uuid = current_user.user_uuid,
+        title = request_body.title,
+        summary = summary,
+        tags_uuid = tags_uuid,
+        website = request_body.website,
+        location_uuid = location.location_uuid,
+        since = request_body.since,
+        image_uuid = image.image_uuid,
+        body = request_body.body,
+        created_at = datetime.now()
+    )
+    crud.create_post(post)
+
+    return status.HTTP_201_CREATED
+
+@api_router.get("/post/{post_uuid}/reactions")
+def get_reactions(post_uuid: str) -> schema.Reaction:
+    reactions = crud.read_reactions(post_uuid)
+
+    return reactions
