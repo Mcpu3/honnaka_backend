@@ -257,7 +257,7 @@ def delete_post(post_uuid: str, current_user: schema.PrivateUser = Depends(get_c
     post = crud.read_post(post_uuid)
     if not post:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    if not post.user_uuid != current_user.user_uuid:
+    if post.user_uuid != current_user.user_uuid:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
     crud.delete_post(post_uuid)
 
