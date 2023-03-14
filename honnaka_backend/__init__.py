@@ -14,5 +14,5 @@ app.add_middleware(CORSMiddleware,
 )
 app.include_router(api.api_router, prefix="/api/v1")
 
-def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
-    return func.AsgiMiddleware(app).handle(req, context)
+async def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
+    return await func.AsgiMiddleware(app).handle_async(req, context)
